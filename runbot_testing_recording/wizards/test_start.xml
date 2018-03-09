@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="runbot_record_test_form_view">
+            <field name="model">runbot.record.test</field>
+            <field name="arch" type="xml">
+                <form string="Record test to do">
+                    <H3>Description of the test</H3>
+                    <field name="description"/>
+                    <p>Details of what must be tested at this</p>
+                    <footer>
+                        <button name="save" string="Save" type="object"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
+
+

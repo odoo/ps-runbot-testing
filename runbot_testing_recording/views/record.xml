@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="runbot_record_form_view">
+            <field name="model">runbot.record</field>
+            <field name="arch" type="xml">
+                <form string="Log">
+                    <group>
+                        <field name="name" />
+                        <field name="module_id" />
+                        <field name="start_date" />
+                        <field name="record_type" />
+                    </group>
+                    <notebook>
+                      <page name="content" string="Content">
+                        <field name="content" />
+                      </page>
+                      <page name="tests" string="Tests to do">
+                        <field name="line_ids" >
+                        <tree string="Tests">
+                            <field name="sequence"/>
+                            <field name="description" />
+                        </tree>
+                        </field>
+                      </page>
+                    </notebook>
+                </form>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="runbot_record_form_view_wizard">
+            <field name="model">runbot.record</field>
+            <field name="arch" type="xml">
+                <form string="Log">
+                    <group>
+                        <field name="name" />
+                        <field name="module_id" />
+                        <field name="record_type" invisible="1"/>
+                    </group>
+                    <label for="description" string="Description"/>
+                    <field name="description"/>
+                    <footer>
+                        <button name="start_recording" string="Start recording" type="object"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="runbot_record_tree_view">
+            <field name="model">runbot.record</field>
+            <field name="arch" type="xml">
+                <tree string="Logs">
+                    <field name="name" />
+                    <field name="module_id" />
+                    <field name="start_date" />
+                    <field name="record_type" />
+                </tree>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="runbot_record_all_act">
+            <field name="name">Runbot Tests</field>
+            <field name="res_model">runbot.record</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <menuitem parent="base.next_id_9" id="runbot_record_all_menu" action="runbot_record_all_act" />
+    </data>
+</odoo>
+
+

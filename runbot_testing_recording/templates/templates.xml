@@ -1,0 +1,9 @@
+<odoo>
+    <template id="assets_backend" inherit_id="web.assets_backend" name="Runbot record assets">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/runbot_testing_recording/static/src/js/debug.js"/>
+        </xpath>
+    </template>
+
+
+</odoo>
