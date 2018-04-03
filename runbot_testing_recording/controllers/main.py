@@ -122,6 +122,40 @@ def save_call(self, model, method, result, args, kwargs):
             content = '\n'.join([recording_id.content or '', content])
             recording_id.content = content
 
+def find_links(origin, target):
+    max_depth = 2
+    already_looked = {}
+    final_result = []
+    def find_path(origin, target, depth, path):
+        for fieldname, field in origin._fields.iteritems():
+            if depth == max_depth:
+                continue
+            if field.type not in ['many2one', 'many2many', 'one2many']:
+                continue
+            if (origin._name, fieldname) in already_looked:
+                # print 'already found'
+                copy_path = deepcopy(path)
+                final_result.append(copy_path + already_looked[(origin._name, fieldname)])
+            if field.comodel_name == target._name:
+                copy_path = deepcopy(path)
+                copy_path.append((origin._name,fieldname))
+                final_result.append(copy_path)
+                # already_looked[((origin._name, fieldname))] = result
+            copy_path = deepcopy(path)
+            copy_path.append((origin._name,fieldname))
+            find_path(origin[:1][fieldname], target, depth+1, copy_path)
+    find_path(origin, target, 1, [])
+
+    paths = [('.'.join([y[1]for y in x]), len(x))for x in final_result]
+
+    result = []
+    for path, length in paths:
+        if target in origin.mapped(path):
+            result.append((path, length))
+    result = sorted(result, key=lambda r: r[1])
+    result[:5]
+    return [x[0] for x in result]
+
 
 def format_python(self, model_name, method_name, args, kwargs, result):
     fields_to_replace_in_context = []
@@ -132,7 +166,7 @@ def format_python(self, model_name, method_name, args, kwargs, result):
     def append_call(variable_name, element, todo, replace_in_context):
         element_output = '%s = %s' % (variable_name, element)
         if todo:
-            stack_pre_call.append('# TODO: find %s link (external id or otherwise)' % (variable_name))
+            stack_pre_call.append('# TODO: Check or Find %s link (external id or otherwise)' % (variable_name))
         stack_pre_call.append(element_output)
         if replace_in_context:
             fields_to_replace_in_context.append(variable_name)
@@ -221,7 +255,13 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
             'name': name,
         }
         data = ir_model_data.create(values)
-
+        get_current_test().write({
+            'reference_ids':[(0,0,{
+                'res_id': rec_id,
+                'res_model': rec_model,
+                'reference': 'self.env.ref(\'%s.%s\')' % (module_name, name),
+                })],
+            })
     if test_type == 'demo':
         return data.complete_name
 
@@ -275,6 +315,26 @@ def get_env_ref_single(id, model_name):
         result = 'self.env.ref(\'%s\').id' % get_xml_id(id, model_name)
         todo = False
     else:
+        current_test = get_current_test()
+        if current_test.reference_ids:
+            if current_test.reference_ids.filtered(lambda r: r.res_model==model_name and r.res_id==id):
+                result = '%s.id' % (current_test.reference_ids.filtered(lambda r: r.res_model==model_name and r.res_id==id)[:1].reference)
+                todo = True
+                return result, todo
+            ref = current_test.reference_ids[:1]
+            links = find_links(request.env[ref.res_model].browse(ref.res_id), request.env[model_name].browse(id))
+            if links:
+                # TODO: keep other links and store it somewhere?
+                result = '%s.%s.id' % (ref.reference, links[0])
+                current_test.write({
+                    'reference_ids': [(0,0,{
+                        'res_id': id,
+                        'res_model': model_name,
+                        'reference': '%s.%s' % (ref.reference, links[0]),
+                        })],
+                    })
+                todo = True
+                return result, todo
         result = '%s' % id
         todo = True
     return result, todo

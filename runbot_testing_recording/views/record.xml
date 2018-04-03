@@ -17,10 +17,19 @@
                       </page>
                       <page name="tests" string="Tests to do">
                         <field name="line_ids" >
-                        <tree string="Tests">
-                            <field name="sequence"/>
-                            <field name="description" />
-                        </tree>
+                            <tree string="Tests">
+                                <field name="sequence"/>
+                                <field name="description" />
+                            </tree>
+                        </field>
+                      </page>
+                      <page name="references" string="References">
+                        <field name="reference_ids" >
+                            <tree string="References">
+                                <field name="reference"/>
+                                <field name="res_model"/>
+                                <field name="res_id"/>
+                            </tree>
                         </field>
                       </page>
                     </notebook>

@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 runbot_record_user_access,runbot_record_user_access,runbot_testing_recording.model_runbot_record,base.group_user,1,1,1,1
 runbot_record_line_user_access,runbot_record_user_access,runbot_testing_recording.model_runbot_record_line,base.group_user,1,1,1,1
+runbot_record_reference_user_access,runbot_record_reference_access,runbot_testing_recording.model_runbot_record_reference,base.group_user,1,1,1,1

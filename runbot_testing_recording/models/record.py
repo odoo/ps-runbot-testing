@@ -22,6 +22,11 @@ class RunbotRecording(models.Model):
         'record_id',
         string='Tests',
     )
+    reference_ids = fields.One2many(
+        'runbot.record.reference',
+        'record_id',
+        string='Reference',
+    )
 
     @api.model
     def open_registration(self):
@@ -106,3 +111,21 @@ class RunbotRecordingLine(models.Model):
     )
     description = fields.Text(string='Description')
     sequence = fields.Integer(string='Sequence')
+
+class RunbotRecordingReferencedRecord(models.Model):
+    _name = 'runbot.record.reference'
+    _order = 'id desc'
+
+    record_id = fields.Many2one(
+        'runbot.record',
+        string='Recording',
+    )
+    res_id = fields.Integer(
+        string='Reference id',
+    )
+    res_model = fields.Char(
+        string='Reference model',
+    )
+    reference = fields.Char(
+        string='Reference',
+    )
