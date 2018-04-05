@@ -98,7 +98,7 @@ class RunbotRecording(models.Model):
         return res
 
     def _format_python(self, content):
-        return autopep8.fix_code(content, options={'aggressive': 1})
+        return autopep8.fix_code(content, options={'aggressive': 1}) if content else ''
 
 class RunbotRecordingLine(models.Model):
     _name = 'runbot.record.line'

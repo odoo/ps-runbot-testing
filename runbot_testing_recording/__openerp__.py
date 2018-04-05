@@ -16,6 +16,7 @@
         'security/ir.model.access.csv',
         'views/record.xml',
         'wizards/test_start.xml',
+        'wizards/caught_error.xml',
         'templates/templates.xml',
     ],
     'demo': [

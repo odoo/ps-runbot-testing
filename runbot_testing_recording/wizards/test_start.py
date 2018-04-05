@@ -2,7 +2,7 @@ from odoo import models, api, fields, _
 import autopep8
 
 
-class RunbotRecordingTEST(models.TransientModel):
+class RunbotRecordingTest(models.TransientModel):
     _name = 'runbot.record.test'
 
     description = fields.Text(string='Description', required=True)

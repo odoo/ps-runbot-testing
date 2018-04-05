@@ -27,6 +27,7 @@ MODEL_TO_AVOID = [
     'runbot.record',
     'runbot.record.test',
     'runbot.record.line',
+    'runbot.record.error',
     ]
 
 METHODS_FOR_DEMO_DATA = [
@@ -49,7 +50,7 @@ class ReportDataset(DataSet):
         copy_args = deepcopy(args)
         copy_kwargs = deepcopy(kwargs)
         result =  super(ReportDataset, self)._call_kw(model, method, args, kwargs)
-        save_call(self, model, method, result, copy_args, copy_kwargs)
+        save_call(model, method, result, copy_args, copy_kwargs)
         request.cr.method_is_writing_in_db = False
         return result
 
@@ -104,7 +105,7 @@ def prepare_record_to_unlink(model, method, args):
                 CREATED_IDS['delete_ids'].append(xml_id)
             # TODO: what to do if record has no xml_id?
 
-def save_call(self, model, method, result, args, kwargs):
+def save_call(model, method, result, args, kwargs):
     runbot_test = eval(request.env['ir.config_parameter'].get_param('runbot.record.test', 'False'))
     runbot_demo = eval(request.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
     if model in MODEL_TO_AVOID or method in METHOD_TO_AVOID:
@@ -114,11 +115,11 @@ def save_call(self, model, method, result, args, kwargs):
         recording_id = get_current_test()
         if recording_id:
             if runbot_test:
-                content = format_python(self, model, method, args, kwargs, result)
+                content = format_python(model, method, args, kwargs, result=result)
             if runbot_demo:
                 if method ==  'copy':
                     raise UserError(_('Avoid duplicating record when recording demonstration data'))
-                content = format_python_xml(self, model, method, args, kwargs, result)
+                content = format_python_xml(model, method, args, kwargs, result)
             content = '\n'.join([recording_id.content or '', content])
             recording_id.content = content
 
@@ -157,7 +158,7 @@ def find_links(origin, target):
     return [x[0] for x in result]
 
 
-def format_python(self, model_name, method_name, args, kwargs, result):
+def format_python(model_name, method_name, args, kwargs, result=None):
     fields_to_replace_in_context = []
     stack_pre_call = []
     stack_post_call = []
@@ -217,7 +218,7 @@ def format_python(self, model_name, method_name, args, kwargs, result):
     kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], basestring) else '%s' % str(kwargs[k])) for k in kwargs])
     args_name += ', %s' % (kwargs_name) if kwargs_name else ''
     method_call = '%s%s%s.%s(%s)' % (env_call, context_call, sudo_name, method_name, args_name) 
-    if method_name in ['create', 'copy', 'name_create']:
+    if method_name in ['create', 'copy', 'name_create'] and result:
         if method_name == 'name_create':
             result = result[0]
         stack_post_call.append(generate_xml_id(result, model_name, result_name='record'))
@@ -366,7 +367,7 @@ def clean_default_value(model, values):
                 values.pop(fieldname)
                 continue
 
-def format_python_xml(self, model_name, method_name, args, kwargs, result):
+def format_python_xml(model_name, method_name, args, kwargs, result):
     global CREATED_IDS
     data_to_format = []
     data_formated = []

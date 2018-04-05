@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
 
-import test_start
+from . import test_start
+from . import caught_error

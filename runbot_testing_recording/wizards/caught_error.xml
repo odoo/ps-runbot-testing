@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="runbot_record_error_form_view">
+            <field name="model">runbot.record.error</field>
+            <field name="arch" type="xml">
+                <form string="Error caught">
+                    <H4>The following error has been caught:</H4>
+                    <group>
+                        <group>
+                        <field name="error_type"/>
+                        <field name="description"/>
+                        </group>
+                    </group>
+                    <p>Do you you wish to confirm this error has to occur and should be tested?</p>
+                    <footer>
+                        <button name="record_error" string="Record test" type="object"/>
+                        <button string="Cancel" special="cancel" class="oe_link"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
+
+
