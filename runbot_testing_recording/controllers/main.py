@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from lxml import etree
+from lxml import etree, html
 import pprint
 import re
 import uuid
@@ -10,6 +10,7 @@ from odoo.addons.web.controllers.main import DataSet
 from odoo.models import BaseModel
 from odoo import models, fields, api, _, SUPERUSER_ID
 from odoo.exceptions import UserError
+from odoo.tools import ustr
 
 ODOO_TAG_VERSION = '10.0e'
 XML_TYPE_MODEL_FIELDS = [
@@ -214,8 +215,8 @@ def format_python(model_name, method_name, args, kwargs, result=None):
             context_call = context_call.replace("'FIELD_%s_TO_REPLACE'" % field, field)
 
     # args and kwargs
-    args_name = ', '.join(['\'%s\'' % a if isinstance(a, basestring) else '%s' % str(a) for a in args]) 
-    kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], basestring) else '%s' % str(kwargs[k])) for k in kwargs])
+    args_name = ', '.join(['\'%s\'' % a if isinstance(a, basestring) else '%s' % ustr(a) for a in args]) 
+    kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], basestring) else '%s' % ustr(kwargs[k])) for k in kwargs])
     args_name += ', %s' % (kwargs_name) if kwargs_name else ''
     method_call = '%s%s%s.%s(%s)' % (env_call, context_call, sudo_name, method_name, args_name) 
     if method_name in ['create', 'copy', 'name_create'] and result:
@@ -421,7 +422,7 @@ def generate_formated_element(xml_id, values, model_name, method_name, data_to_f
     if method_name in  ['create', 'copy']:
         clean_default_value(model, values)
     for fieldname in values:
-        if fieldname == 'unique_hash_key':
+        if fieldname == 'unique_hash_key' or fieldname not in model._fields:
             continue
         value = values[fieldname]
         field = model._fields[fieldname]
@@ -472,16 +473,20 @@ def generate_xml_element(xml_id, values, model_name, method_name):
         'model': mod._name
     })
     for fieldname in values:
-        if fieldname == 'unique_hash_key':
+        if fieldname == 'unique_hash_key' or (fieldname not in mod._fields and fieldname not in values):
             continue
-        value = values[fieldname]
-        field = mod._fields[fieldname]
         xml_field = etree.SubElement(xml_record, 'field', attrib={
             'name': fieldname,
         })
+        value = values[fieldname]
+        if fieldname not in mod._fields:
+            xml_field.set('TODO', 'Warning, non exiting field in write or create')
+            xml_field.text = '%s' % value
+            continue
+        field = mod._fields[fieldname]
 
         if field.type == 'boolean':
-            xml_field.set('eval', str(value))
+            xml_field.set('eval', ustr(value))
         elif field.type in ['many2one', 'reference']:
 
             if field.type == 'many2one':
@@ -528,12 +533,12 @@ def generate_xml_element(xml_id, values, model_name, method_name):
             xml_field.append(etree.XML(value))
         elif field.type in ['html']:
             xml_field.set('type', 'html')
-            xml_field.append(etree.XML(value))
+            xml_field.append(html.fromstring(value))
         elif field.type in ['text']:
             if value:
-                field_text = str(value)
+                field_text = ustr(value)
                 xml_field.text = etree.CDATA('\n%s\n' % field_text)
         else:
             if value:
-                xml_field.text = str(value)
+                xml_field.text = ustr(value)
     return etree.tostring(xml_record, pretty_print=True)
