@@ -215,6 +215,8 @@ def format_python(model_name, method_name, args, kwargs, result=None):
             context_call = context_call.replace("'FIELD_%s_TO_REPLACE'" % field, field)
 
     # args and kwargs
+    if method_name in ['create', 'write']:
+        args[0] = add_groups_values(model_name, args[0])
     args_name = ', '.join(['\'%s\'' % a if isinstance(a, basestring) else '%s' % ustr(a) for a in args]) 
     kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], basestring) else '%s' % ustr(kwargs[k])) for k in kwargs])
     args_name += ', %s' % (kwargs_name) if kwargs_name else ''
@@ -368,6 +370,12 @@ def clean_default_value(model, values):
                 values.pop(fieldname)
                 continue
 
+def add_groups_values(model_name, values):
+    if model_name != 'res.users':
+        return values
+    return request.env[model_name]._remove_reified_groups(values)
+
+
 def format_python_xml(model_name, method_name, args, kwargs, result):
     global CREATED_IDS
     data_to_format = []
@@ -386,9 +394,10 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
         for xml_id in CREATED_IDS['delete_ids']:
             data_to_format.append((xml_id,{}, model_name, method_name))
     if method_name == 'write':
+        values = add_groups_values(model_name, vals)
         for id in ids:
             xml_id = generate_xml_id(id, model_name, test_type='demo')
-            data_to_format.append((xml_id,vals, model_name, method_name))
+            data_to_format.append((xml_id,values, model_name, method_name))
     if method_name in ['create', 'name_create']:
         values = get_values_from_context(model, context)
         if method_name == 'name_create':
@@ -396,6 +405,7 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
             result = result[0]
         else:
             values.update(vals)
+        values = add_groups_values(model_name, values)
         xml_id = generate_xml_id(result, model_name, test_type='demo')
         data_to_format.append((xml_id,values, model_name, 'create'))
 
