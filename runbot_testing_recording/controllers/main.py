@@ -217,8 +217,8 @@ def format_python(model_name, method_name, args, kwargs, result=None):
     # args and kwargs
     if method_name in ['create', 'write']:
         args[0] = add_groups_values(model_name, args[0])
-    args_name = ', '.join(['\'%s\'' % a if isinstance(a, basestring) else '%s' % ustr(a) for a in args]) 
-    kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], basestring) else '%s' % ustr(kwargs[k])) for k in kwargs])
+    args_name = ', '.join(['\'%s\'' % a if isinstance(a, str) else '%s' % ustr(a) for a in args]) 
+    kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], str) else '%s' % ustr(kwargs[k])) for k in kwargs])
     args_name += ', %s' % (kwargs_name) if kwargs_name else ''
     method_call = '%s%s%s.%s(%s)' % (env_call, context_call, sudo_name, method_name, args_name) 
     if method_name in ['create', 'copy', 'name_create'] and result:
