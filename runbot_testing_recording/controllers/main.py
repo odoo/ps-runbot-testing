@@ -84,7 +84,7 @@ def update_vals(method, args, kwargs):
                 for element in v:
                     if element and (isinstance(element, tuple) or isinstance(element, list)) and element[0] == 0:
                         add_key(element[2])
-    runbot_demo = eval(request.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
+    runbot_demo = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
     if runbot_demo and method in METHODS_FOR_DEMO_DATA and method != 'unlink':
         values = None
         if method == 'write':
@@ -95,7 +95,7 @@ def update_vals(method, args, kwargs):
             add_key(values)
 
 def prepare_record_to_unlink(model, method, args):
-    runbot_demo = eval(request.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
+    runbot_demo = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
     global CREATED_IDS
     if runbot_demo and method == 'unlink':
         CREATED_IDS['delete_ids'] = []
@@ -107,8 +107,8 @@ def prepare_record_to_unlink(model, method, args):
             # TODO: what to do if record has no xml_id?
 
 def save_call(model, method, result, args, kwargs):
-    runbot_test = eval(request.env['ir.config_parameter'].get_param('runbot.record.test', 'False'))
-    runbot_demo = eval(request.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
+    runbot_test = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.test', 'False'))
+    runbot_demo = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
     if model in MODEL_TO_AVOID or method in METHOD_TO_AVOID:
         return
     if (runbot_test and request.cr.method_is_writing_in_db) or \
@@ -173,7 +173,7 @@ def format_python(model_name, method_name, args, kwargs, result=None):
         if replace_in_context:
             fields_to_replace_in_context.append(variable_name)
 
-    model = request.env[model_name]
+    model = request.env[model_name].sudo()
     method = getattr(type(model), method_name)
 
     # Object calling
@@ -240,7 +240,7 @@ def format_call_stack(stack_pre_call, stack_post_call, method_call):
     return call
 
 def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', create_if_not_found=True):
-    ir_model_data = request.env['ir.model.data']
+    ir_model_data = request.env['ir.model.data'].sudo()
     module_name = get_module_name()
     data = ir_model_data.search([('model', '=', rec_model), ('res_id', '=', rec_id)])
     if not data and not create_if_not_found:
@@ -248,10 +248,10 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
     if not data and create_if_not_found:
         postfix = 0
         test_name = re.sub('[^a-zA-Z]+', '', get_current_test().name).lower()
-        name = '%s_%s_%s' % (test_name, request.env[rec_model]._table, rec_id)
+        name = '%s_%s_%s' % (test_name, request.env[rec_model].sudo()._table, rec_id)
         while ir_model_data.search([('module', '=', module_name), ('name', '=', name)]):
             postfix += 1
-            name = '%s_%s_%s' % (request.env[rec_model]._table, rec_id, postfix)
+            name = '%s_%s_%s' % (request.env[rec_model].sudo()._table, rec_id, postfix)
         values = {
             'model': rec_model,
             'res_id': rec_id,
@@ -280,11 +280,11 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
     return 'self.env[\'ir.model.data\'].create(%s)' % (values)
 
 def get_record(rec_id, model):
-    return request.env[model].search([('id','=',rec_id)])
+    return request.env[model].sudo().search([('id','=',rec_id)])
 
 def get_current_test():
-    rec_id = int(request.env['ir.config_parameter'].get_param('runbot.record.current', '0'))
-    rec = request.env['runbot.record'].browse(rec_id)
+    rec_id = int(request.env['ir.config_parameter'].sudo().get_param('runbot.record.current', '0'))
+    rec = request.env['runbot.record'].sudo().browse(rec_id)
     return rec
 
 def get_module_name():
@@ -292,7 +292,7 @@ def get_module_name():
     return rec.module_id.name
 
 def get_xml_id(res_id, model):
-    data = request.env['ir.model.data'].search([
+    data = request.env['ir.model.data'].sudo().search([
         ('res_id','=',res_id),
         ('model','=',model),
         ], limit=1)
@@ -326,7 +326,7 @@ def get_env_ref_single(id, model_name):
                 todo = True
                 return result, todo
             ref = current_test.reference_ids[:1]
-            links = find_links(request.env[ref.res_model].browse(ref.res_id), request.env[model_name].browse(id))
+            links = find_links(request.env[ref.res_model].sudo().browse(ref.res_id), request.env[model_name].sudo().browse(id))
             if links:
                 # TODO: keep other links and store it somewhere?
                 result = '%s.%s.id' % (ref.reference, links[0])
@@ -373,7 +373,7 @@ def clean_default_value(model, values):
 def add_groups_values(model_name, values):
     if model_name != 'res.users':
         return values
-    return request.env[model_name]._remove_reified_groups(values)
+    return request.env[model_name].sudo()._remove_reified_groups(values)
 
 
 def format_python_xml(model_name, method_name, args, kwargs, result):
@@ -381,7 +381,7 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
     data_to_format = []
     data_formated = []
     data_to_xml = []
-    model = request.env[model_name]
+    model = request.env[model_name].sudo()
     method = getattr(type(model), method_name)
     if getattr(method, '_api', None) == 'model':
         ids = []
@@ -427,7 +427,7 @@ def generate_formated_element(xml_id, values, model_name, method_name, data_to_f
     xml_id_not_found = xml_id.split('.')[0] == 'TODO'
     if xml_id_not_found:
         res_id = int(xml_id.split('.')[2])
-    model = request.env[model_name]
+    model = request.env[model_name].sudo()
     orgin_record = (xml_id, values, model_name, method_name)
     if method_name in  ['create', 'copy']:
         clean_default_value(model, values)
@@ -446,7 +446,7 @@ def generate_formated_element(xml_id, values, model_name, method_name, data_to_f
                 if magic_tuple[0] == 0:
                     sub_value = magic_tuple[2]
                     if field.type == 'one2many':
-                        sub_value[field.inverse_name] = request.env.ref(xml_id).id if not xml_id_not_found else res_id
+                        sub_value[field.inverse_name] = request.env.ref(xml_id).sudo().id if not xml_id_not_found else res_id
                     current_record = CREATED_IDS[sub_value['unique_hash_key']]
                     record_to_create = (current_record['xml_id'], sub_value, field.comodel_name, 'create')
                     if field.type == 'one2many':
@@ -476,7 +476,7 @@ def generate_xml_element(xml_id, values, model_name, method_name):
     xml_id_not_found = xml_id.split('.')[0] == 'TODO'
     if xml_id_not_found:
         res_id = int(xml_id.split('.')[2])
-    mod = request.env[model_name]
+    mod = request.env[model_name].sudo()
     record_type = 'record' if method_name != 'unlink' else 'delete'
     xml_record = etree.Element(record_type, attrib={
         'id': xml_id,
