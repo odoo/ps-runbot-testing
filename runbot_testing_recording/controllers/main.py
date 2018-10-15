@@ -161,6 +161,7 @@ def find_links(origin, target):
 
 def format_python(model_name, method_name, args, kwargs, result=None):
     fields_to_replace_in_context = []
+    args_to_replace = {}
     stack_pre_call = []
     stack_post_call = []
     env_call = ''
@@ -212,12 +213,19 @@ def format_python(model_name, method_name, args, kwargs, result=None):
             context[field] = 'FIELD_%s_TO_REPLACE' % field
         context_call = '.with_context(%s)' % pprint.pformat(context)
         for field in fields_to_replace_in_context:
+            context_call = context_call.replace("u'FIELD_%s_TO_REPLACE'" % field, field)
             context_call = context_call.replace("'FIELD_%s_TO_REPLACE'" % field, field)
 
     # args and kwargs
     if method_name in ['create', 'write']:
         args[0] = add_groups_values(model_name, args[0])
+        replace_idtoxml(model_name, args[0], args_to_replace)
+        for field in args_to_replace:
+            args[0][field] = 'FIELD_%s_TO_REPLACE' % field
     args_name = ', '.join(['\'%s\'' % a if isinstance(a, basestring) else '%s' % ustr(a) for a in args]) 
+    for field in args_to_replace:
+        args_name = args_name.replace("u'FIELD_%s_TO_REPLACE'" % field, args_to_replace[field])
+        args_name = args_name.replace("'FIELD_%s_TO_REPLACE'" % field, args_to_replace[field])
     kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], basestring) else '%s' % ustr(kwargs[k])) for k in kwargs])
     args_name += ', %s' % (kwargs_name) if kwargs_name else ''
     method_call = '%s%s%s.%s(%s)' % (env_call, context_call, sudo_name, method_name, args_name) 
@@ -369,6 +377,20 @@ def clean_default_value(model, values):
             if not field.default and ((not values[fieldname] or values[fieldname] == [(6,0,[])]) == (not field.default)):
                 values.pop(fieldname)
                 continue
+
+def replace_idtoxml(model_name, values, args_to_replace):
+    model = request.env[model_name].sudo()
+    for fieldname in values:
+        if fieldname not in model._fields:
+            continue
+        value = values[fieldname]
+        field = model._fields[fieldname]
+        if field.type != 'many2one':
+            continue
+        ir_model_data = request.env['ir.model.data'].sudo()
+        data = ir_model_data.search([('model', '=', field.comodel_name), ('res_id', '=', value)])
+        if data:
+            args_to_replace[fieldname] = 'self.env.ref(\'%s.%s\').id' % (data.module, data.name)
 
 def add_groups_values(model_name, values):
     if model_name != 'res.users':
