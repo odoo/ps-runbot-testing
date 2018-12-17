@@ -388,7 +388,7 @@ def replace_idtoxml(model_name, values, args_to_replace):
         if field.type != 'many2one':
             continue
         ir_model_data = request.env['ir.model.data'].sudo()
-        data = ir_model_data.search([('model', '=', field.comodel_name), ('res_id', '=', value)])
+        data = ir_model_data.search([('model', '=', field.comodel_name), ('res_id', '=', value)], limit=1)
         if data:
             args_to_replace[fieldname] = 'self.env.ref(\'%s.%s\').id' % (data.module, data.name)
 
