@@ -65,13 +65,21 @@ DebugManager.include({
     runbot_make_todo_test: function() {
         var _this = this;
         var Record = new Model('runbot.record');
-        Record.call('make_todo_test', [this._context]).then(function(act) {
+        var context = {}
+        if (this._context) {
+            context = this._context;
+        }
+        Record.call('make_todo_test', [context]).then(function(act) {
                     _this.do_action(act);
                 });;
     },
     runbot_stop_registration: function() {
         var Record = new Model('runbot.record');
-        Record.call('stop_registration', [this._context]);
+        var context = {}
+        if (this._context) {
+            context = this._context;
+        }
+        Record.call('stop_registration', [context]);
         this.runbot_start_test = false;
         is_runbot_start_test_registration_variable = false
         this.runbot_start_demo = false;
