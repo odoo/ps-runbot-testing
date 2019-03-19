@@ -82,19 +82,27 @@ DebugManager.include({
     },
     runbot_make_todo_test: function() {
         var _this = this;
+        var context = {}
+        if (this._context) {
+            context = this._context;
+        }
         rpc.query({
                 model: 'runbot.record',
                 method: 'make_todo_test',
-                args: [this._context],
+                args: [context],
             }).then(function(act) {
                     _this.do_action(act);
                 });;
     },
     runbot_stop_registration: function() {
+        var context = {}
+        if (this._context) {
+            context = this._context;
+        }
         rpc.query({
                 model: 'runbot.record',
                 method: 'stop_registration',
-                args: [this._context],
+                args: [context],
             });
         this.runbot_start_test = false;
         is_runbot_start_test_registration_variable = false
