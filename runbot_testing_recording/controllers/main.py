@@ -79,7 +79,7 @@ def update_vals(method, args, kwargs):
     def add_key(vals):
         key = uuid.uuid4().hex
         vals['unique_hash_key'] = key
-        for k, v in vals.iteritems():
+        for k, v in vals.items():
             if isinstance(v, list):
                 for element in v:
                     if element and (isinstance(element, tuple) or isinstance(element, list)) and element[0] == 0:
@@ -129,7 +129,7 @@ def find_links(origin, target):
     already_looked = {}
     final_result = []
     def find_path(origin, target, depth, path):
-        for fieldname, field in origin._fields.iteritems():
+        for fieldname, field in origin._fields.items():
             if depth == max_depth:
                 continue
             if field.type not in ['many2one', 'many2many', 'one2many']:
