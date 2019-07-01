@@ -191,7 +191,6 @@ DebugManager.include({
         });
     },
     runbot_stop_registration: function() {
-        ajax.genericJsonRpc = oldGenericJsonRpc;
         rpc.query({
             model: 'runbot.record',
             method: 'stop_registration',
