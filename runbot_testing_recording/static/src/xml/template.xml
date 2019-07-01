@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates xml:space="preserve">
     <t t-extend="WebClient.DebugManager.Global">
-        <t t-jquery="li:last" t-operation="after">
-            <li class="divider"/>
-            <li t-if="!manager.runbot_start_test and !manager.runbot_start_demo"><a href="#" data-action="runbot_start_demo_registration">Record Demo data</a></li>
-            <li t-if="manager.runbot_start_demo"><a href="#" data-action="runbot_stop_registration">Stop Demo Data</a></li>
-            <li t-if="!manager.runbot_start_test and !manager.runbot_start_demo"><a href="#" data-action="runbot_start_test_registration">Start Test</a></li>
-            <li t-if="manager.runbot_start_test"><a href="#" data-action="runbot_stop_registration">Stop Test</a></li>
-            <li t-if="manager.runbot_start_test"><a href="#" data-action="runbot_make_todo_test">Check to make</a></li>
+        <t t-jquery="a:last" t-operation="after">
+            <div class="dropdown-divider o_debug_runbot_testing_section" role="separator"/>
+            <t t-if="!manager.runbot_start_test and !manager.runbot_start_demo"><a role="menuitem" class="dropdown-item" href="#" data-action="runbot_start_demo_registration">Record Demo data</a></t>
+            <t t-if="manager.runbot_start_demo"><a role="menuitem" class="dropdown-item" href="#" data-action="runbot_stop_registration">Stop Demo Data</a></t>
+            <t t-if="!manager.runbot_start_test and !manager.runbot_start_demo"><a role="menuitem" class="dropdown-item" href="#" data-action="runbot_start_test_registration">Start Test</a></t>
+            <t t-if="manager.runbot_start_test"><a role="menuitem" class="dropdown-item" href="#" data-action="runbot_stop_registration">Stop Test</a></t>
+            <t t-if="manager.runbot_start_test"><a role="menuitem" class="dropdown-item" href="#" data-action="runbot_make_todo_test">Check to make</a></t>
         </t>
     </t>
 </templates>

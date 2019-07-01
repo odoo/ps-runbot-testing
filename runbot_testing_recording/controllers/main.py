@@ -178,7 +178,7 @@ def format_python(model_name, method_name, args, kwargs, result=None):
     method = getattr(type(model), method_name)
 
     # Object calling
-    if getattr(method, '_api', None) == 'model':
+    if getattr(method, '_api', None) in ['model', 'model_create']:
         if method_name in ['create', 'name_create']:
             env_call = 'record = self.env[\'%s\']' % (model._name)
         else:
@@ -405,7 +405,7 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
     data_to_xml = []
     model = request.env[model_name].sudo()
     method = getattr(type(model), method_name)
-    if getattr(method, '_api', None) == 'model':
+    if getattr(method, '_api', None) in ['model', 'model_create']:
         ids = []
         vals = args[0]
     else:
