@@ -67,7 +67,6 @@
         <record model="ir.actions.act_window" id="runbot_record_all_act">
             <field name="name">Runbot Tests</field>
             <field name="res_model">runbot.record</field>
-            <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
         </record>
         <menuitem parent="base.next_id_9" id="runbot_record_all_menu" action="runbot_record_all_act" />

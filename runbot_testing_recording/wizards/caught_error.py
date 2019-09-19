@@ -4,6 +4,8 @@ from ..controllers.main import format_python
 
 class RunbotRecordingError(models.TransientModel):
     _name = 'runbot.record.error'
+    _description = 'Runbot error record'
+
 
     error_type = fields.Char(string='Error type', readonly=True)
     description = fields.Text(string='Description', readonly=True)

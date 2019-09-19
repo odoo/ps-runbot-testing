@@ -9,8 +9,7 @@ var ajax = require('web.ajax');
 var _lt = core._lt;
 var utils = require('web.utils');
 var time = require('web.time');
-var CrashManager = require('web.CrashManager');
-var web_client = require('web.web_client');
+var CrashManager = require('web.CrashManager').CrashManager;
 
 var is_runbot_start_test_registration_variable
 
@@ -26,8 +25,9 @@ var map_title ={
 var genericJsonRpc = function (fct_name, params, settings, fct) {
     var shadow = settings.shadow || false;
     delete settings.shadow;
-    if (! shadow)
+    if (!shadow) {
         core.bus.trigger('rpc_request');
+    }
 
     var data = {
         jsonrpc: "2.0",
@@ -36,70 +36,98 @@ var genericJsonRpc = function (fct_name, params, settings, fct) {
         id: Math.floor(Math.random() * 1000 * 1000 * 1000)
     };
     var xhr = fct(data);
-    var result = xhr.pipe(function(result) {
+    var result = xhr.then(function(result) {
         core.bus.trigger('rpc:result', data, result);
         if (result.error !== undefined) {
             if (result.error.data.arguments[0] !== "bus.Bus not available in test mode") {
-                console.error("Server application error", JSON.stringify(result.error));
+                console.debug(
+                    "Server application error\n",
+                    "Error code:", result.error.code, "\n",
+                    "Error message:", result.error.message, "\n",
+                    "Error data message:\n", result.error.data.message, "\n",
+                    "Error data debug:\n", result.error.data.debug
+                );
             }
-            return $.Deferred().reject("server", result.error);
+            return Promise.reject({type: "server", error: result.error});
         } else {
             return result.result;
         }
     }, function() {
         //console.error("JsonRPC communication error", _.toArray(arguments));
-        var def = $.Deferred();
-        return def.reject.apply(def, ["communication"].concat(_.toArray(arguments)));
+        var reason = {
+            type: 'communication',
+            error: arguments[0],
+            textStatus: arguments[1],
+            errorThrown: arguments[2],
+        };
+        return Promise.reject(reason);
     });
-    // FIXME: jsonp?
-    result.abort = function () { if (xhr.abort) xhr.abort(); };
 
-    var p = result.then(function (result) {
-        if (!shadow) {
-            core.bus.trigger('rpc_response');
-        }
-        return result;
-    }, function (type, error, textStatus, errorThrown) {
-        if (type === "server") {
+    var rejection;
+    var promise = new Promise(function (resolve, reject) {
+        rejection = reject;
+
+        result.then(function (result) {
             if (!shadow) {
                 core.bus.trigger('rpc_response');
             }
-            if (error.code === 100) {
-                core.bus.trigger('invalidate_session');
-            }
-            return $.Deferred().reject(error, $.Event());
-        } else {
-            if (!shadow) {
-                core.bus.trigger('rpc_response_failed');
-            }
-            var nerror = {
-                code: -32098,
-                message: "XmlHttpRequestError " + errorThrown,
-                data: {
-                    type: "xhr"+textStatus,
-                    debug: error.responseText,
-                    objects: [error, errorThrown]
-                },
-            };
-            return $.Deferred().reject(nerror, $.Event());
-        }
-    });
-    return p.fail(function () { // Allow deferred user to disable rpc_error call in fail
-        p.fail(function (error, event) {
-            if (!event.isDefaultPrevented()) {
-                core.bus.trigger(
-                    'rpc_error',
-                    error,
-                    event,
-                    params  //NOTE: Inject params to be used inside downstream
-                            //      processing.
-                            //      See CrashManager extension down this same
-                            //      file, inside the call to do_action the
-                            //      error_caught_params context's key.
-                );
+            resolve(result);
+        }, function (reason) {
+            var type = reason.type;
+            var error = reason.error;
+            var textStatus = reason.textStatus;
+            var errorThrown = reason.errorThrown;
+            if (type === "server") {
+                if (!shadow) {
+                    core.bus.trigger('rpc_response');
+                }
+                if (error.code === 100) {
+                    core.bus.trigger('invalidate_session');
+                }
+                reject({message: error, event: $.Event()});
+            } else {
+                if (!shadow) {
+                    core.bus.trigger('rpc_response_failed');
+                }
+                var nerror = {
+                    code: -32098,
+                    message: "XmlHttpRequestError " + errorThrown,
+                    data: {
+                        type: "xhr"+textStatus,
+                        debug: error.responseText,
+                        objects: [error, errorThrown]
+                    },
+                };
+                reject({message: nerror, event: $.Event()});
             }
         });
     });
+
+    // FIXME: jsonp?
+    promise.abort = function () {
+        rejection({
+            message: "XmlHttpRequestError abort",
+            event: $.Event('abort')
+        });
+        if (xhr.abort) {
+            xhr.abort();
+        }
+    };
+    promise.guardedCatch(function (reason) { // Allow promise user to disable rpc_error call in case of failure
+        setTimeout(function () {
+            // we want to execute this handler after all others (hence
+            // setTimeout) to let the other handlers prevent the event
+            if (!reason.event.isDefaultPrevented()) {
+                core.bus.trigger('rpc_error', reason.message, reason.event, params);
+                //NOTE: Inject params to be used inside downstream
+                //      processing.
+                //      See CrashManager extension down this same
+                //      file, inside the call to do_action the
+                //      error_caught_params context's key.
+            }
+        }, 0);
+    });
+    return promise;
 };
 
 var jsonRpc = function (url, fct_name, params, settings) {
@@ -156,7 +184,7 @@ DebugManager.include({
         rpc.query({
             model: 'runbot.record',
             method: 'open_registration',
-            args: [{'default_record_type': 'test'}],
+            context: {'default_record_type': 'test'},
         }).then(function(act) {
             _this.do_action(act);
             _this.runbot_start_test = true;
@@ -169,7 +197,7 @@ DebugManager.include({
         rpc.query({
             model: 'runbot.record',
             method: 'open_registration',
-            args: [{'default_record_type': 'demo'}],
+            context: {'default_record_type': 'demo'},
         }).then(function(act) {
             _this.do_action(act);
             _this.runbot_start_demo = true;
@@ -185,7 +213,7 @@ DebugManager.include({
         rpc.query({
             model: 'runbot.record',
             method: 'make_todo_test',
-            args: [context],
+            context: context,
         }).then(function(act) {
             _this.do_action(act);
         });
@@ -194,7 +222,7 @@ DebugManager.include({
         rpc.query({
             model: 'runbot.record',
             method: 'stop_registration',
-            args: [this._context || {}],
+            context: this._context || {},
         });
         this.runbot_start_test = false;
         is_runbot_start_test_registration_variable = false
@@ -203,11 +231,11 @@ DebugManager.include({
     },
 });
 
-
 CrashManager.include({
     rpc_error: function (error) {
+        var self = this
         if (is_runbot_start_test_registration_variable && _.has(map_title, error.data.exception_type)) {
-            web_client.do_action({
+            self.do_action({
                 res_model: 'runbot.record.error',
                 name: 'Error Caught',
                 type: 'ir.actions.act_window',

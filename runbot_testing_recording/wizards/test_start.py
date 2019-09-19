@@ -4,6 +4,7 @@ import autopep8
 
 class RunbotRecordingTest(models.TransientModel):
     _name = 'runbot.record.test'
+    _description = 'Runbot assert record'
 
     description = fields.Text(string='Description', required=True)
 

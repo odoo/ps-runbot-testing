@@ -6,6 +6,7 @@ from odoo.exceptions import UserError
 
 class RunbotRecording(models.Model):
     _name = 'runbot.record'
+    _description = 'Runbot test flow'
     _order = 'id desc'
 
     start_date = fields.Datetime(string="Start Date", default=lambda self: fields.datetime.now())
@@ -45,7 +46,6 @@ class RunbotRecording(models.Model):
             'target': 'new',
         }
   
-    @api.multi
     def start_recording(self):
         self.ensure_one()
         content = '\'\'\'\n%s\n\'\'\'' % (self.description) if self.record_type == 'test' else '<!--\n%s\n-->' % (self.description)
@@ -82,7 +82,6 @@ class RunbotRecording(models.Model):
     def get_runbot_start_demo(self):
         return eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
 
-    @api.multi
     def write(self, vals):
         # Write only on record of same type to be sure it works
         if 'content' in vals and 'test' in self.mapped('record_type'):
@@ -102,6 +101,7 @@ class RunbotRecording(models.Model):
 
 class RunbotRecordingLine(models.Model):
     _name = 'runbot.record.line'
+    _description = 'Runbot test lines'
     _rec_name = 'description'
     _order = 'sequence'
 
@@ -114,6 +114,7 @@ class RunbotRecordingLine(models.Model):
 
 class RunbotRecordingReferencedRecord(models.Model):
     _name = 'runbot.record.reference'
+    _description = 'Runbot test references'
     _order = 'id desc'
 
     record_id = fields.Many2one(
