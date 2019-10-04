@@ -1,0 +1,1 @@
+[Explanation at Odoo Experience 2019](https://youtu.be/EJiwLcpKSgo?t=11856)
