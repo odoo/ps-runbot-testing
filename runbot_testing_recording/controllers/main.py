@@ -206,7 +206,7 @@ def format_python(model_name, method_name, args, kwargs, result=None):
         user_id_name, todo_user_id = get_env_ref_single(context['uid'], 'res.users')
         append_call('uid', user_id_name, todo_user_id, True)
         if context.get('uid') != SUPERUSER_ID:
-            sudo_name = '.sudo(uid)'
+            sudo_name = '.with_user(uid)'
 
     if context:
         for field in fields_to_replace_in_context:
