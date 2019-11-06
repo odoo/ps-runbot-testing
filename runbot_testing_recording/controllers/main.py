@@ -441,7 +441,9 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
         xml_id, vals, modelname, methodname = element
         data_to_xml.append(generate_xml_element(xml_id, vals, modelname, methodname))
 
-    return '\n'.join(data_to_xml)
+    # Depending on server configuration, we sometime receive bytes instead of str
+    # We have to make sure that join will be called with a list of str to avoid issues
+    return '\n'.join([str(datum) for datum in data_to_xml])
 
 def generate_formated_element(xml_id, values, model_name, method_name, data_to_format):
     global CREATED_IDS
