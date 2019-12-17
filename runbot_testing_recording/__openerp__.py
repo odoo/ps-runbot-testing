@@ -24,5 +24,5 @@
     'qweb': [
         'static/src/xml/template.xml'
     ],
-    'auto_install' : True,
+    'auto_install' : False,
 }
