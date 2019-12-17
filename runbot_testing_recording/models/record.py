@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import autopep8
+from black import format_str, FileMode
 import ast
 
 from odoo import http, models, fields, api
 from odoo.exceptions import UserError
-
+$
 class RunbotRecording(models.Model):
     _name = 'runbot.record'
     _description = 'Runbot test flow'
@@ -98,7 +98,7 @@ class RunbotRecording(models.Model):
         return res
 
     def _format_python(self, content):
-        return autopep8.fix_code(content, options={'aggressive': 1}) if content else ''
+        return format_str(content, mode=FileMode())
 
 class RunbotRecordingLine(models.Model):
     _name = 'runbot.record.line'
