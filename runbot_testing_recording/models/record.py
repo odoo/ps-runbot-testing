@@ -11,7 +11,7 @@ class RunbotRecording(models.Model):
 
     start_date = fields.Datetime(string="Start Date", default=lambda self: fields.datetime.now())
     name = fields.Char(string="Title", required=True)
-    module_id = fields.Many2one('ir.module.module', string="Module to apply tests to", required=True)
+    module_id = fields.Many2one('ir.module.module', string="Module to apply tests to", required=True, ondelete='cascade')
     description = fields.Text(string='Description')
     record_type = fields.Selection([
         ('demo', 'Demo Data'),

@@ -8,7 +8,7 @@ old_execute = Cursor.execute
 def new_execute(self, query, params=None, log_exceptions=None):
     result = old_execute(self, query, params, log_exceptions)
 
-    if re_write_db.search(query):
+    if re_write_db.search(str(query)):
         self.method_is_writing_in_db = True
     return result
 
