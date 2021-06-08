@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import autopep8
+import ast
 
 from odoo import http, models, fields, api
 from odoo.exceptions import UserError
@@ -31,9 +32,9 @@ class RunbotRecording(models.Model):
 
     @api.model
     def open_registration(self):
-        if eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False')):
+        if ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False')):
             raise UserError('Already set to record demo datas')
-        if eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False')):
+        if ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False')):
             raise UserError('Already set to record a test flow')
         view_id =  self.env.ref('runbot_testing_recording.runbot_record_form_view_wizard').id
         return {
@@ -55,7 +56,7 @@ class RunbotRecording(models.Model):
 
     @api.model
     def make_todo_test(self):
-        if not eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False')):
+        if not ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False')):
             raise UserError('Must be recording a test flow')
         return {
             'name': 'Record test to do',
@@ -76,11 +77,11 @@ class RunbotRecording(models.Model):
 
     @api.model
     def get_runbot_start_test(self):
-        return eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False'))
+        return ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False'))
 
     @api.model
     def get_runbot_start_demo(self):
-        return eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
+        return ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
 
     def write(self, vals):
         # Write only on record of same type to be sure it works
