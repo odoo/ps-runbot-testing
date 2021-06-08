@@ -2,6 +2,7 @@
 from lxml import etree, html
 import pprint
 import re
+import ast
 import uuid
 from copy import deepcopy
 
@@ -84,7 +85,7 @@ def update_vals(method, args, kwargs):
                 for element in v:
                     if element and (isinstance(element, tuple) or isinstance(element, list)) and element[0] == 0:
                         add_key(element[2])
-    runbot_demo = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
+    runbot_demo = ast.literal_eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
     if runbot_demo and method in METHODS_FOR_DEMO_DATA and method != 'unlink':
         values = None
         if method == 'write':
@@ -95,7 +96,7 @@ def update_vals(method, args, kwargs):
             add_key(values)
 
 def prepare_record_to_unlink(model, method, args):
-    runbot_demo = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
+    runbot_demo = ast.literal_eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
     global CREATED_IDS
     if runbot_demo and method == 'unlink':
         CREATED_IDS['delete_ids'] = []
@@ -107,8 +108,8 @@ def prepare_record_to_unlink(model, method, args):
             # TODO: what to do if record has no xml_id?
 
 def save_call(model, method, result, args, kwargs):
-    runbot_test = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.test', 'False'))
-    runbot_demo = eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
+    runbot_test = ast.literal_eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.test', 'False'))
+    runbot_demo = ast.literal_eval(request.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
     if model in MODEL_TO_AVOID or method in METHOD_TO_AVOID:
         return
     if (runbot_test and request.cr.method_is_writing_in_db) or \
