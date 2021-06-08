@@ -50,7 +50,7 @@ class ReportDataset(DataSet):
         prepare_record_to_unlink(model, method, args)
         copy_args = deepcopy(args)
         copy_kwargs = deepcopy(kwargs)
-        result =  super(ReportDataset, self)._call_kw(model, method, args, kwargs)
+        result = super(ReportDataset, self)._call_kw(model, method, args, kwargs)
         save_call(model, method, result, copy_args, copy_kwargs)
         request.cr.method_is_writing_in_db = False
         return result
@@ -70,7 +70,7 @@ class Base(models.AbstractModel):
             CREATED_IDS[unique_hash_key] = {
                 'res_id': res.id,
                 'model': self._name,
-                'xml_id': generate_xml_id(res.id, self._name, test_type='demo'),
+                'xml_id': xml_id,
                 'complete_vals': vals,
                 }
         return res
@@ -118,7 +118,7 @@ def save_call(model, method, result, args, kwargs):
             if runbot_test:
                 content = format_python(model, method, args, kwargs, result=result)
             if runbot_demo:
-                if method ==  'copy':
+                if method == 'copy':
                     raise UserError(_('Avoid duplicating record when recording demonstration data'))
                 content = format_python_xml(model, method, args, kwargs, result)
             content = '\n'.join([recording_id.content or '', content])
@@ -140,11 +140,11 @@ def find_links(origin, target):
                 final_result.append(copy_path + already_looked[(origin._name, fieldname)])
             if field.comodel_name == target._name:
                 copy_path = deepcopy(path)
-                copy_path.append((origin._name,fieldname))
+                copy_path.append((origin._name, fieldname))
                 final_result.append(copy_path)
                 # already_looked[((origin._name, fieldname))] = result
             copy_path = deepcopy(path)
-            copy_path.append((origin._name,fieldname))
+            copy_path.append((origin._name, fieldname))
             find_path(origin[:1][fieldname], target, depth+1, copy_path)
     find_path(origin, target, 1, [])
 
@@ -155,7 +155,6 @@ def find_links(origin, target):
         if target in origin.mapped(path):
             result.append((path, length))
     result = sorted(result, key=lambda r: r[1])
-    result[:5]
     return [x[0] for x in result]
 
 
@@ -188,7 +187,7 @@ def format_python(model_name, method_name, args, kwargs, result=None):
         ids_name, todo_ids = get_env_ref_multi(ids, model_name)
         if method_name == 'copy':
             append_call('record_ids', ids_name, todo_ids, False)
-            env_call ='record = self.env[\'%s\'].browse(record_ids)' % (model._name)
+            env_call = 'record = self.env[\'%s\'].browse(record_ids)' % (model._name)
         else:
             append_call('record_ids', ids_name, todo_ids, False)
             env_call = 'self.env[\'%s\'].browse(record_ids)' % (model._name)
@@ -197,11 +196,11 @@ def format_python(model_name, method_name, args, kwargs, result=None):
     if context and 'active_id' in context:
         active_id_name, todo_active_id = get_env_ref_single(context['active_id'], context['active_model'])
         append_call('active_id', active_id_name, todo_active_id, True)
-        active_ids_name,todo_active_ids = get_env_ref_multi(context['active_ids'], context['active_model'])
+        active_ids_name, todo_active_ids = get_env_ref_multi(context['active_ids'], context['active_model'])
         append_call('active_ids', active_ids_name, todo_active_ids, True)
 
     # Sudo
-    sudo_name=''
+    sudo_name = ''
     if context:
         user_id_name, todo_user_id = get_env_ref_single(context['uid'], 'res.users')
         append_call('uid', user_id_name, todo_user_id, True)
@@ -222,13 +221,13 @@ def format_python(model_name, method_name, args, kwargs, result=None):
         replace_idtoxml(model_name, args[0], args_to_replace)
         for field in args_to_replace:
             args[0][field] = 'FIELD_%s_TO_REPLACE' % field
-    args_name = ', '.join(['\'%s\'' % a if isinstance(a, str) else '%s' % ustr(a) for a in args]) 
+    args_name = ', '.join(['\'%s\'' % a if isinstance(a, str) else '%s' % ustr(a) for a in args])
     for field in args_to_replace:
         args_name = args_name.replace("u'FIELD_%s_TO_REPLACE'" % field, args_to_replace[field])
         args_name = args_name.replace("'FIELD_%s_TO_REPLACE'" % field, args_to_replace[field])
-    kwargs_name = ', '.join(['%s=%s' % (k,'\'%s\'' % kwargs[k] if isinstance(kwargs[k], str) else '%s' % ustr(kwargs[k])) for k in kwargs])
+    kwargs_name = ', '.join(['%s=%s' % (k, '\'%s\'' % kwargs[k] if isinstance(kwargs[k], str) else '%s' % ustr(kwargs[k])) for k in kwargs])
     args_name += ', %s' % (kwargs_name) if kwargs_name else ''
-    method_call = '%s%s%s.%s(%s)' % (env_call, context_call, sudo_name, method_name, args_name) 
+    method_call = '%s%s%s.%s(%s)' % (env_call, context_call, sudo_name, method_name, args_name)
     if method_name in ['create', 'copy', 'name_create'] and result:
         if method_name == 'name_create':
             result = result[0]
@@ -268,7 +267,7 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
         }
         data = ir_model_data.create(values)
         get_current_test().write({
-            'reference_ids':[(0,0,{
+            'reference_ids':[(0, 0, {
                 'res_id': rec_id,
                 'res_model': rec_model,
                 'reference': 'self.env.ref(\'%s.%s\')' % (module_name, name),
@@ -288,7 +287,7 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
     return 'self.env[\'ir.model.data\'].create(%s)' % (values)
 
 def get_record(rec_id, model):
-    return request.env[model].sudo().search([('id','=',rec_id)])
+    return request.env[model].sudo().search([('id', '=', rec_id)])
 
 def get_current_test():
     rec_id = int(request.env['ir.config_parameter'].sudo().get_param('runbot.record.current', '0'))
@@ -301,14 +300,13 @@ def get_module_name():
 
 def get_xml_id(res_id, model):
     data = request.env['ir.model.data'].sudo().search([
-        ('res_id','=',res_id),
-        ('model','=',model),
+        ('res_id', '=', res_id),
+        ('model', '=', model),
         ], limit=1)
     if data:
         if data.module:
             return '%s.%s' % (data.module, data.name)
-        else:
-            return data.name
+        return data.name
 
 def get_env_ref_multi(ids, model_name):
     todo = False
@@ -329,8 +327,8 @@ def get_env_ref_single(id, model_name):
     else:
         current_test = get_current_test()
         if current_test.reference_ids:
-            if current_test.reference_ids.filtered(lambda r: r.res_model==model_name and r.res_id==id):
-                result = '%s.id' % (current_test.reference_ids.filtered(lambda r: r.res_model==model_name and r.res_id==id)[:1].reference)
+            if current_test.reference_ids.filtered(lambda r: r.res_model == model_name and r.res_id == id):
+                result = '%s.id' % (current_test.reference_ids.filtered(lambda r: r.res_model == model_name and r.res_id == id)[:1].reference)
                 todo = True
                 return result, todo
             ref = current_test.reference_ids[:1]
@@ -339,7 +337,7 @@ def get_env_ref_single(id, model_name):
                 # TODO: keep other links and store it somewhere?
                 result = '%s.%s.id' % (ref.reference, links[0])
                 current_test.write({
-                    'reference_ids': [(0,0,{
+                    'reference_ids': [(0, 0, {
                         'res_id': id,
                         'res_model': model_name,
                         'reference': '%s.%s' % (ref.reference, links[0]),
@@ -374,7 +372,7 @@ def clean_default_value(model, values):
                 elif field.default == values[fieldname]:
                     values.pop(fieldname)
                     continue
-            if not field.default and ((not values[fieldname] or values[fieldname] == [(6,0,[])]) == (not field.default)):
+            if not field.default and ((not values[fieldname] or values[fieldname] == [(6, 0, [])]) == (not field.default)):
                 values.pop(fieldname)
                 continue
 
@@ -412,14 +410,14 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
         ids, args = args[0], args[1:]
         vals = args[0]
     context, args, kwargs = api.split_context(method, args, kwargs)
-    if method_name ==  'unlink':
+    if method_name == 'unlink':
         for xml_id in CREATED_IDS['delete_ids']:
-            data_to_format.append((xml_id,{}, model_name, method_name))
+            data_to_format.append((xml_id, {}, model_name, method_name))
     if method_name == 'write':
         values = add_groups_values(model_name, vals)
         for id in ids:
             xml_id = generate_xml_id(id, model_name, test_type='demo')
-            data_to_format.append((xml_id,values, model_name, method_name))
+            data_to_format.append((xml_id, values, model_name, method_name))
     if method_name in ['create', 'name_create']:
         values = get_values_from_context(model, context)
         if method_name == 'name_create':
@@ -429,7 +427,7 @@ def format_python_xml(model_name, method_name, args, kwargs, result):
             values.update(vals)
         values = add_groups_values(model_name, values)
         xml_id = generate_xml_id(result, model_name, test_type='demo')
-        data_to_format.append((xml_id,values, model_name, 'create'))
+        data_to_format.append((xml_id, values, model_name, 'create'))
 
     while data_to_format:
         xml_id, vals, modelname, methodname = data_to_format.pop(0)
@@ -462,7 +460,6 @@ def generate_formated_element(xml_id, values, model_name, method_name, data_to_f
         field = model._fields[fieldname]
 
         if field.type in ['one2many', 'many2many']:
-            magic_output = []
             idx = 0
             idx_to_remove = []
             for magic_tuple in value:
@@ -497,9 +494,6 @@ def generate_formated_element(xml_id, values, model_name, method_name, data_to_f
 
 
 def generate_xml_element(xml_id, values, model_name, method_name):
-    xml_id_not_found = xml_id.split('.')[0] == 'TODO'
-    if xml_id_not_found:
-        res_id = int(xml_id.split('.')[2])
     mod = request.env[model_name].sudo()
     record_type = 'record' if method_name != 'unlink' else 'delete'
     xml_record = etree.Element(record_type, attrib={
@@ -544,7 +538,7 @@ def generate_xml_element(xml_id, values, model_name, method_name):
                     if new_xml_id:
                         magic_output.append('(%s, ref(\'%s\'), 0)' % (magic_tuple[0], new_xml_id))
                     else:
-                        magic_output.append('(%s, %s, %s)' % (magic_tuple[0], magic_tuple[1]))
+                        magic_output.append('(%s, %s)' % (magic_tuple[0], magic_tuple[1]))
                         xml_field.set('TODO', 'find the external id')
                 if magic_tuple[0] == 5:
                     magic_output.append('(5,0,0)')
@@ -560,7 +554,7 @@ def generate_xml_element(xml_id, values, model_name, method_name):
                     magic_output.append('(6, 0, [%s])' % ', '.join(['%s' % x for x in output_list]))
             if magic_output:
                 xml_field.set('eval', '[%s]' % ', '.join(magic_output))
-            else: 
+            else:
                 xml_record.remove(xml_field)
         elif (mod._name, fieldname) in XML_TYPE_MODEL_FIELDS:
             xml_field.set('type', 'xml')
