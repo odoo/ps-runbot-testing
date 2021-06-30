@@ -4,7 +4,7 @@ import ast
 
 from odoo import http, models, fields, api
 from odoo.exceptions import UserError
-$
+
 class RunbotRecording(models.Model):
     _name = 'runbot.record'
     _description = 'Runbot test flow'
