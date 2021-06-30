@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 from lxml import etree, html
 import pprint
-import re
 import ast
 import uuid
 from copy import deepcopy
 
 from odoo.http import request
 from odoo.addons.web.controllers.main import DataSet
-from odoo.models import BaseModel
-from odoo import models, fields, api, _, SUPERUSER_ID
+from odoo import models, api, _
 from odoo.exceptions import UserError
 from odoo.tools import ustr
 
@@ -259,7 +257,7 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
         return False
     if not data and create_if_not_found:
         postfix = 0
-        test_name = re.sub('[^a-zA-Z]+', '', get_current_test().name).lower()
+        test_name = get_current_test().technical_name
         name = '%s_%s_%s' % (test_name, request.env[rec_model].sudo()._table, rec_id)
         while ir_model_data.search([('module', '=', module_name), ('name', '=', name)]):
             postfix += 1

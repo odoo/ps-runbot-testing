@@ -4,7 +4,7 @@ import ast
 
 from odoo import http, models, fields, api
 from odoo.exceptions import UserError
-
+import re
 class RunbotRecording(models.Model):
     _name = 'runbot.record'
     _description = 'Runbot test flow'
@@ -12,6 +12,7 @@ class RunbotRecording(models.Model):
 
     start_date = fields.Datetime(string="Start Date", default=lambda self: fields.datetime.now())
     name = fields.Char(string="Title", required=True)
+    technical_name = fields.Char(compute='_compute_technical_name')
     module_id = fields.Many2one('ir.module.module', string="Module to apply tests to", required=True, ondelete='cascade')
     description = fields.Text(string='Description')
     record_type = fields.Selection([
@@ -52,7 +53,7 @@ class RunbotRecording(models.Model):
         self.ensure_one()
         if self.record_type == 'test' :
             user_decorator = '@users("%s")' % self.env.user.login if self.single_user else ''
-            method_name = 'def test_%s(self):' % self.name
+            method_name = 'def test_%s(self):' % self.technical_name
             content = '%s\n%s\n    \'\'\'\n%s\n    \'\'\'' % (user_decorator, method_name, self.description if self.description else '')
         else:
             content = '<!--\n%s\n-->' % (self.description)
@@ -104,6 +105,11 @@ class RunbotRecording(models.Model):
 
     def _format_python(self, content):
         return format_str(content, mode=FileMode())
+
+    @api.depends('name')
+    def _compute_technical_name(self):
+        for rec in self:
+            rec.technical_name = re.sub('[^a-zA-Z]+', '', rec.name).lower()
 
 class RunbotRecordingLine(models.Model):
     _name = 'runbot.record.line'
