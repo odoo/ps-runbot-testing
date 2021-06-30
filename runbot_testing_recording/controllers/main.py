@@ -202,11 +202,10 @@ def format_python(model_name, method_name, args, kwargs, result=None):
 
     # Sudo
     sudo_name = ''
-    if context:
+    if not get_single_user():
         user_id_name, todo_user_id = get_env_ref_single(context['uid'], 'res.users')
         append_call('uid', user_id_name, todo_user_id, True)
-        if context.get('uid') != SUPERUSER_ID:
-            sudo_name = '.with_user(uid)'
+        sudo_name = '.with_user(uid)'
 
     if context:
         for field in fields_to_replace_in_context:
@@ -238,7 +237,10 @@ def format_python(model_name, method_name, args, kwargs, result=None):
     return format_call_stack(stack_pre_call, stack_post_call, method_call)
 
 def format_call_stack(stack_pre_call, stack_post_call, method_call):
-    call = method_call
+    indent = '    '
+    call = indent + method_call
+    stack_pre_call = [indent + call for call in stack_pre_call]
+    stack_post_call = [indent + call for call in stack_post_call]
     if stack_pre_call:
         pre_call = '\n'.join(stack_pre_call)
         call = '%s\n%s' % (pre_call, call)
@@ -294,6 +296,10 @@ def get_current_test():
     rec_id = int(request.env['ir.config_parameter'].sudo().get_param('runbot.record.current', '0'))
     rec = request.env['runbot.record'].sudo().browse(rec_id)
     return rec
+
+def get_single_user():
+    rec = get_current_test()
+    return rec.single_user
 
 def get_module_name():
     rec = get_current_test()

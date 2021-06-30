@@ -29,6 +29,7 @@ class RunbotRecording(models.Model):
         'record_id',
         string='Reference',
     )
+    single_user = fields.Boolean(default=True, help="Uncheck this box if you want to log in with a different user during this test")
 
     @api.model
     def open_registration(self):
@@ -49,7 +50,12 @@ class RunbotRecording(models.Model):
   
     def start_recording(self):
         self.ensure_one()
-        content = '\'\'\'\n%s\n\'\'\'' % (self.description) if self.record_type == 'test' else '<!--\n%s\n-->' % (self.description)
+        if self.record_type == 'test' :
+            user_decorator = '@users("%s")' % self.env.user.login if self.single_user else ''
+            method_name = 'def test_%s(self):' % self.name
+            content = '%s\n%s\n    \'\'\'\n%s\n    \'\'\'' % (user_decorator, method_name, self.description if self.description else '')
+        else:
+            content = '<!--\n%s\n-->' % (self.description)
         self.content = content
         self.env['ir.config_parameter'].set_param('runbot.record.%s' % (self.record_type), 'True')
         self.env['ir.config_parameter'].set_param('runbot.record.current', self.id)
@@ -73,7 +79,6 @@ class RunbotRecording(models.Model):
         self.env['ir.config_parameter'].set_param('runbot.record.test', 'False')
         self.env['ir.config_parameter'].set_param('runbot.record.demo', 'False')
         self.env['ir.config_parameter'].set_param('runbot.record.current', '')
-
 
     @api.model
     def get_runbot_start_test(self):

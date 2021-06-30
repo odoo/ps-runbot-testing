@@ -43,6 +43,7 @@
                     <group>
                         <field name="name" />
                         <field name="module_id" />
+                        <field name="single_user" />
                         <field name="record_type" invisible="1"/>
                     </group>
                     <label for="description" string="Description"/>
