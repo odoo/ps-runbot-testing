@@ -366,6 +366,9 @@ def get_values_from_context(model, context):
             output[fieldname] = context[key]
     return output
 
+def check_empty_x2many(value):
+    return not value or value in [[(6, 0, [])], [[6, 0, []]]]
+
 def clean_default_value(model, values):
     for fieldname in model._fields:
         if fieldname in values:
@@ -375,13 +378,16 @@ def clean_default_value(model, values):
                     if field.type == 'many2one' and isinstance(field.default(model), models.Model) and field.default(model).id == values[fieldname]:
                         values.pop(fieldname)
                         continue
+                    if not field.default(model) and check_empty_x2many(values[fieldname]):
+                        values.pop(fieldname)
+                        continue
                     if field.default(model) == values[fieldname]:
                         values.pop(fieldname)
                         continue
                 elif field.default == values[fieldname]:
                     values.pop(fieldname)
                     continue
-            if not field.default and ((not values[fieldname] or values[fieldname] == [(6, 0, [])]) == (not field.default)):
+            if not field.default and (check_empty_x2many(values[fieldname]) == (not field.default)):
                 values.pop(fieldname)
                 continue
 
