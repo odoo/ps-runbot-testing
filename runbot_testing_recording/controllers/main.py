@@ -217,6 +217,8 @@ def format_python(model_name, method_name, args, kwargs, result=None):
 
     # args and kwargs
     if method_name in ['create', 'write']:
+        if method_name == 'create':
+            clean_default_value(model, args[0])
         args[0] = add_groups_values(model_name, args[0])
         replace_idtoxml(model_name, args[0], args_to_replace)
         for field in args_to_replace:
