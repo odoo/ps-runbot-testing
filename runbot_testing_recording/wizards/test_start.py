@@ -11,7 +11,7 @@ class RunbotRecordingTest(models.TransientModel):
     def save(self):
         recording_id = int(self.env['ir.config_parameter'].get_param('runbot.record.current', '0'))
         recording = self.env['runbot.record'].search([('id','=', recording_id)])
-        description = '\'\'\'TODO: DO A TEST HERE: \n %s \n\'\'\'' % (self.description)
+        description = '    \'\'\'TODO: ADD AN ASSERT HERE: \n %s \n    \'\'\'' % (self.description)
         if recording:
             content = '\n'.join([recording.content or '', description])
             content = autopep8.fix_code(content, options={'aggressive': 1})
