@@ -3,3 +3,5 @@ runbot_record_user_access,runbot_record_user_access,runbot_testing_recording.mod
 runbot_record_line_user_access,runbot_record_user_access,runbot_testing_recording.model_runbot_record_line,base.group_user,1,1,1,1
 runbot_record_reference_user_access,runbot_record_reference_access,runbot_testing_recording.model_runbot_record_reference,base.group_user,1,1,1,1
 access_ir_module_all_read,access_ir_module_all_read,base.model_ir_module_module,,1,0,0,0
+access_runbot_record_test,access_runbot_record_test,model_runbot_record_test,base.group_user,1,1,1,1
+access_runbot_record_error,access_runbot_record_error,model_runbot_record_error,base.group_user,1,1,1,1
