@@ -311,9 +311,7 @@ def get_xml_id(res_id, model):
         ('model', '=', model),
         ], limit=1)
     if data:
-        if data.module:
-            return '%s.%s' % (data.module, data.name)
-        return data.name
+        return '%s.%s' % (data.module, data.name)
 
 def get_env_ref_multi(ids, model_name):
     todo = False
@@ -396,7 +394,7 @@ def clean_default_value(model, values):
                         comodel_values = magic_tuple[2]
                         clean_default_value(comodel_model, comodel_values)
 
-def replace_idtoxml(model_name, values, args_to_replace, parent_field=False):
+def replace_idtoxml(model_name, values, args_to_replace):
     model = request.env[model_name].sudo()
     for fieldname in values:
         if fieldname not in model._fields:
@@ -404,25 +402,29 @@ def replace_idtoxml(model_name, values, args_to_replace, parent_field=False):
         value = values[fieldname]
         field = model._fields[fieldname]
         if field.type in ['one2many', 'many2many']:
-            for idx, magic_tuple in enumerate(values[fieldname]):
+            for magic_tuple in values[fieldname]:
                 if magic_tuple[0] == 0:
                     comodel_values = magic_tuple[2]
-                    if parent_field:
-                        parent_fieldname = '%s_%s_%s' % (parent_field, idx, fieldname)
-                    else:
-                        parent_fieldname = '%s_%s' % (idx, fieldname)
-                    replace_idtoxml(field.comodel_name, comodel_values, args_to_replace, parent_field=parent_fieldname)
-        if field.type != 'many2one':
-            continue
-        ir_model_data = request.env['ir.model.data'].sudo()
-        data = ir_model_data.search([('model', '=', field.comodel_name), ('res_id', '=', value)], limit=1)
-        if data:
-            if parent_field:
-                key = '%s_%s' % (parent_field, fieldname)
-            else:
-                key = fieldname
-            args_to_replace[key] = 'self.env.ref(\'%s.%s\').id' % (data.module, data.name)
-            values[fieldname] = 'FIELD_%s_TO_REPLACE' % key
+                    replace_idtoxml(field.comodel_name, comodel_values, args_to_replace)
+
+                if magic_tuple[0] == 6:
+                    comodel_new_values = []
+                    for res_id in magic_tuple[2]:
+                        xml_id = get_xml_id(res_id, field.comodel_name)
+                        if xml_id:
+                            key = len(args_to_replace)
+                            args_to_replace[key] = 'self.env.ref(\'%s\').id' % (xml_id, )
+                            comodel_new_values.append('FIELD_%s_TO_REPLACE' % key)
+                        else:
+                            comodel_new_values.append(res_id)
+                    magic_tuple[2] = comodel_new_values
+
+        if field.type == 'many2one':
+            xml_id = get_xml_id(value, field.comodel_name)
+            if xml_id:
+                key = len(args_to_replace)
+                args_to_replace[key] = 'self.env.ref(\'%s\').id' % (xml_id, )
+                values[fieldname] = 'FIELD_%s_TO_REPLACE' % key
 
 def add_groups_values(model_name, values):
     if model_name != 'res.users':
