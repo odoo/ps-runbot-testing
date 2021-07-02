@@ -407,7 +407,7 @@ def replace_idtoxml(model_name, values, args_to_replace):
                     comodel_values = magic_tuple[2]
                     replace_idtoxml(field.comodel_name, comodel_values, args_to_replace)
 
-                if magic_tuple[0] == 6:
+                elif magic_tuple[0] == 6:
                     comodel_new_values = []
                     for res_id in magic_tuple[2]:
                         xml_id = get_xml_id(res_id, field.comodel_name)
