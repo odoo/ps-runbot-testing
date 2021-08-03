@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import autopep8
+from black import format_str, FileMode
 import ast
 
 from odoo import http, models, fields, api
 from odoo.exceptions import UserError
-
+import re
 class RunbotRecording(models.Model):
     _name = 'runbot.record'
     _description = 'Runbot test flow'
@@ -12,6 +12,7 @@ class RunbotRecording(models.Model):
 
     start_date = fields.Datetime(string="Start Date", default=lambda self: fields.datetime.now())
     name = fields.Char(string="Title", required=True)
+    technical_name = fields.Char(compute='_compute_technical_name')
     module_id = fields.Many2one('ir.module.module', string="Module to apply tests to", required=True, ondelete='cascade')
     description = fields.Text(string='Description')
     record_type = fields.Selection([
@@ -29,6 +30,7 @@ class RunbotRecording(models.Model):
         'record_id',
         string='Reference',
     )
+    single_user = fields.Boolean(default=True, help="Uncheck this box if you want to log in with a different user during this test")
 
     @api.model
     def open_registration(self):
@@ -49,7 +51,12 @@ class RunbotRecording(models.Model):
   
     def start_recording(self):
         self.ensure_one()
-        content = '\'\'\'\n%s\n\'\'\'' % (self.description) if self.record_type == 'test' else '<!--\n%s\n-->' % (self.description)
+        if self.record_type == 'test' :
+            user_decorator = '@users("%s")' % self.env.user.login if self.single_user else ''
+            method_name = 'def test_%s(self):' % self.technical_name
+            content = '%s\n%s\n    \'\'\'\n%s\n    \'\'\'' % (user_decorator, method_name, self.description if self.description else '')
+        else:
+            content = '<!--\n%s\n-->' % (self.description)
         self.content = content
         self.env['ir.config_parameter'].set_param('runbot.record.%s' % (self.record_type), 'True')
         self.env['ir.config_parameter'].set_param('runbot.record.current', self.id)
@@ -74,7 +81,6 @@ class RunbotRecording(models.Model):
         self.env['ir.config_parameter'].set_param('runbot.record.demo', 'False')
         self.env['ir.config_parameter'].set_param('runbot.record.current', '')
 
-
     @api.model
     def get_runbot_start_test(self):
         return ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False'))
@@ -98,7 +104,12 @@ class RunbotRecording(models.Model):
         return res
 
     def _format_python(self, content):
-        return autopep8.fix_code(content, options={'aggressive': 1}) if content else ''
+        return format_str(content, mode=FileMode())
+
+    @api.depends('name')
+    def _compute_technical_name(self):
+        for rec in self:
+            rec.technical_name = re.sub('[^a-zA-Z]+', '', rec.name).lower()
 
 class RunbotRecordingLine(models.Model):
     _name = 'runbot.record.line'

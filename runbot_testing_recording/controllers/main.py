@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 from lxml import etree, html
 import pprint
-import re
 import ast
 import uuid
 from copy import deepcopy
 
 from odoo.http import request
 from odoo.addons.web.controllers.main import DataSet
-from odoo.models import BaseModel
-from odoo import models, fields, api, _, SUPERUSER_ID
+from odoo import models, api, _
 from odoo.exceptions import UserError
 from odoo.tools import ustr
 
@@ -202,11 +200,10 @@ def format_python(model_name, method_name, args, kwargs, result=None):
 
     # Sudo
     sudo_name = ''
-    if context:
+    if not get_single_user():
         user_id_name, todo_user_id = get_env_ref_single(context['uid'], 'res.users')
         append_call('uid', user_id_name, todo_user_id, True)
-        if context.get('uid') != SUPERUSER_ID:
-            sudo_name = '.with_user(uid)'
+        sudo_name = '.with_user(uid)'
 
     if context:
         for field in fields_to_replace_in_context:
@@ -218,11 +215,13 @@ def format_python(model_name, method_name, args, kwargs, result=None):
 
     # args and kwargs
     if method_name in ['create', 'write']:
+        if method_name == 'create':
+            clean_default_value(model, args[0])
         args[0] = add_groups_values(model_name, args[0])
         replace_idtoxml(model_name, args[0], args_to_replace)
-        for field in args_to_replace:
-            args[0][field] = 'FIELD_%s_TO_REPLACE' % field
+
     args_name = ', '.join(['\'%s\'' % a if isinstance(a, str) else '%s' % ustr(a) for a in args])
+
     for field in args_to_replace:
         args_name = args_name.replace("u'FIELD_%s_TO_REPLACE'" % field, args_to_replace[field])
         args_name = args_name.replace("'FIELD_%s_TO_REPLACE'" % field, args_to_replace[field])
@@ -238,7 +237,10 @@ def format_python(model_name, method_name, args, kwargs, result=None):
     return format_call_stack(stack_pre_call, stack_post_call, method_call)
 
 def format_call_stack(stack_pre_call, stack_post_call, method_call):
-    call = method_call
+    indent = '    '
+    call = indent + method_call
+    stack_pre_call = [indent + call for call in stack_pre_call]
+    stack_post_call = [indent + call for call in stack_post_call]
     if stack_pre_call:
         pre_call = '\n'.join(stack_pre_call)
         call = '%s\n%s' % (pre_call, call)
@@ -255,7 +257,7 @@ def generate_xml_id(rec_id, rec_model, result_name=None, test_type='test', creat
         return False
     if not data and create_if_not_found:
         postfix = 0
-        test_name = re.sub('[^a-zA-Z]+', '', get_current_test().name).lower()
+        test_name = get_current_test().technical_name
         name = '%s_%s_%s' % (test_name, request.env[rec_model].sudo()._table, rec_id)
         while ir_model_data.search([('module', '=', module_name), ('name', '=', name)]):
             postfix += 1
@@ -295,6 +297,10 @@ def get_current_test():
     rec = request.env['runbot.record'].sudo().browse(rec_id)
     return rec
 
+def get_single_user():
+    rec = get_current_test()
+    return rec.single_user
+
 def get_module_name():
     rec = get_current_test()
     return rec.module_id.name
@@ -305,9 +311,7 @@ def get_xml_id(res_id, model):
         ('model', '=', model),
         ], limit=1)
     if data:
-        if data.module:
-            return '%s.%s' % (data.module, data.name)
-        return data.name
+        return '%s.%s' % (data.module, data.name)
 
 def get_env_ref_multi(ids, model_name):
     todo = False
@@ -358,6 +362,9 @@ def get_values_from_context(model, context):
             output[fieldname] = context[key]
     return output
 
+def check_empty_x2many(value):
+    return not value or value in [[(6, 0, [])], [[6, 0, []]]]
+
 def clean_default_value(model, values):
     for fieldname in model._fields:
         if fieldname in values:
@@ -367,15 +374,25 @@ def clean_default_value(model, values):
                     if field.type == 'many2one' and isinstance(field.default(model), models.Model) and field.default(model).id == values[fieldname]:
                         values.pop(fieldname)
                         continue
+                    if not field.default(model) and check_empty_x2many(values[fieldname]):
+                        values.pop(fieldname)
+                        continue
                     if field.default(model) == values[fieldname]:
                         values.pop(fieldname)
                         continue
                 elif field.default == values[fieldname]:
                     values.pop(fieldname)
                     continue
-            if not field.default and ((not values[fieldname] or values[fieldname] == [(6, 0, [])]) == (not field.default)):
+            if not field.default and (check_empty_x2many(values[fieldname]) == (not field.default)):
                 values.pop(fieldname)
                 continue
+            if field.type in ['one2many', 'many2many']:
+                comodel_model = request.env[field.comodel_name].sudo()
+
+                for magic_tuple in values[fieldname]:
+                    if magic_tuple[0] == 0:
+                        comodel_values = magic_tuple[2]
+                        clean_default_value(comodel_model, comodel_values)
 
 def replace_idtoxml(model_name, values, args_to_replace):
     model = request.env[model_name].sudo()
@@ -384,12 +401,30 @@ def replace_idtoxml(model_name, values, args_to_replace):
             continue
         value = values[fieldname]
         field = model._fields[fieldname]
-        if field.type != 'many2one':
-            continue
-        ir_model_data = request.env['ir.model.data'].sudo()
-        data = ir_model_data.search([('model', '=', field.comodel_name), ('res_id', '=', value)], limit=1)
-        if data:
-            args_to_replace[fieldname] = 'self.env.ref(\'%s.%s\').id' % (data.module, data.name)
+        if field.type in ['one2many', 'many2many']:
+            for magic_tuple in values[fieldname]:
+                if magic_tuple[0] == 0:
+                    comodel_values = magic_tuple[2]
+                    replace_idtoxml(field.comodel_name, comodel_values, args_to_replace)
+
+                elif magic_tuple[0] == 6:
+                    comodel_new_values = []
+                    for res_id in magic_tuple[2]:
+                        xml_id = get_xml_id(res_id, field.comodel_name)
+                        if xml_id:
+                            key = len(args_to_replace)
+                            args_to_replace[key] = 'self.env.ref(\'%s\').id' % (xml_id, )
+                            comodel_new_values.append('FIELD_%s_TO_REPLACE' % key)
+                        else:
+                            comodel_new_values.append(res_id)
+                    magic_tuple[2] = comodel_new_values
+
+        if field.type == 'many2one':
+            xml_id = get_xml_id(value, field.comodel_name)
+            if xml_id:
+                key = len(args_to_replace)
+                args_to_replace[key] = 'self.env.ref(\'%s\').id' % (xml_id, )
+                values[fieldname] = 'FIELD_%s_TO_REPLACE' % key
 
 def add_groups_values(model_name, values):
     if model_name != 'res.users':
