@@ -32,11 +32,11 @@ class RunbotRecording(models.Model):
 
     @api.model
     def open_registration(self):
-        if ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False')):
+        if ast.literal_eval(self.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False')):
             raise UserError('Already set to record demo datas')
-        if ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False')):
+        if ast.literal_eval(self.env['ir.config_parameter'].sudo().get_param('runbot.record.test', 'False')):
             raise UserError('Already set to record a test flow')
-        view_id =  self.env.ref('runbot_testing_recording.runbot_record_form_view_wizard').id
+        view_id = self.env.ref('runbot_testing_recording.runbot_record_form_view_wizard').id
         return {
             'name': 'Record test',
             'type': 'ir.actions.act_window',
@@ -46,17 +46,17 @@ class RunbotRecording(models.Model):
             'context': self.env.context,
             'target': 'new',
         }
-  
+
     def start_recording(self):
         self.ensure_one()
         content = '\'\'\'\n%s\n\'\'\'' % (self.description) if self.record_type == 'test' else '<!--\n%s\n-->' % (self.description)
         self.content = content
-        self.env['ir.config_parameter'].set_param('runbot.record.%s' % (self.record_type), 'True')
-        self.env['ir.config_parameter'].set_param('runbot.record.current', self.id)
+        self.env['ir.config_parameter'].sudo().set_param('runbot.record.%s' % (self.record_type), 'True')
+        self.env['ir.config_parameter'].sudo().set_param('runbot.record.current', self.id)
 
     @api.model
     def make_todo_test(self):
-        if not ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False')):
+        if not ast.literal_eval(self.env['ir.config_parameter'].sudo().get_param('runbot.record.test', 'False')):
             raise UserError('Must be recording a test flow')
         return {
             'name': 'Record test to do',
@@ -70,18 +70,18 @@ class RunbotRecording(models.Model):
 
     @api.model
     def stop_registration(self):
-        self.env['ir.config_parameter'].set_param('runbot.record.test', 'False')
-        self.env['ir.config_parameter'].set_param('runbot.record.demo', 'False')
-        self.env['ir.config_parameter'].set_param('runbot.record.current', '')
+        self.env['ir.config_parameter'].sudo().set_param('runbot.record.test', 'False')
+        self.env['ir.config_parameter'].sudo().set_param('runbot.record.demo', 'False')
+        self.env['ir.config_parameter'].sudo().set_param('runbot.record.current', '')
 
 
     @api.model
     def get_runbot_start_test(self):
-        return ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.test', 'False'))
+        return ast.literal_eval(self.env['ir.config_parameter'].sudo().get_param('runbot.record.test', 'False'))
 
     @api.model
     def get_runbot_start_demo(self):
-        return ast.literal_eval(self.env['ir.config_parameter'].get_param('runbot.record.demo', 'False'))
+        return ast.literal_eval(self.env['ir.config_parameter'].sudo().get_param('runbot.record.demo', 'False'))
 
     def write(self, vals):
         # Write only on record of same type to be sure it works

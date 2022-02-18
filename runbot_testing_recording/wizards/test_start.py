@@ -9,8 +9,8 @@ class RunbotRecordingTest(models.TransientModel):
     description = fields.Text(string='Description', required=True)
 
     def save(self):
-        recording_id = int(self.env['ir.config_parameter'].get_param('runbot.record.current', '0'))
-        recording = self.env['runbot.record'].search([('id','=', recording_id)])
+        recording_id = int(self.env['ir.config_parameter'].sudo().get_param('runbot.record.current', '0'))
+        recording = self.env['runbot.record'].search([('id', '=', recording_id)])
         description = '\'\'\'TODO: DO A TEST HERE: \n %s \n\'\'\'' % (self.description)
         if recording:
             content = '\n'.join([recording.content or '', description])
