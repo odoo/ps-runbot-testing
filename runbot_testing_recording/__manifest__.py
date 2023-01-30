@@ -6,6 +6,7 @@
     """,
     'category': '',
     'version': '0.1',
+    'license': 'OEEL-1',
 
     'depends': [
         'base',
