@@ -51,7 +51,7 @@ class ReportDataset(DataSet):
         prepare_record_to_unlink(model, method, args)
         copy_args = deepcopy(args)
         copy_kwargs = deepcopy(kwargs)
-        result = super(ReportDataset, self)._call_kw(model, method, args, kwargs)
+        result = super()._call_kw(model, method, args, kwargs)
         save_call(model, method, result, copy_args, copy_kwargs)
         request.cr.method_is_writing_in_db = False
         return result
@@ -65,7 +65,7 @@ class Base(models.AbstractModel):
         unique_hash_key = False
         if 'unique_hash_key' in vals:
             unique_hash_key = vals.pop('unique_hash_key')
-        res = super(Base, self).create(vals)
+        res = super().create(vals)
         if unique_hash_key:
             xml_id = generate_xml_id(res.id, self._name, test_type='demo')
             CREATED_IDS[unique_hash_key] = {
@@ -75,6 +75,14 @@ class Base(models.AbstractModel):
                 'complete_vals': vals,
                 }
         return res
+
+
+    def write(self, vals):
+        unique_hash_key = False
+        if 'unique_hash_key' in vals:
+            unique_hash_key = vals.pop('unique_hash_key')
+        return super().write(vals)
+
 
 def update_vals(method, args, kwargs):
     def add_key(vals):
